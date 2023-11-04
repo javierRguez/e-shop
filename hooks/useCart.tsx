@@ -10,9 +10,13 @@ import { toast } from 'react-hot-toast';
 
 interface CartContextType {
   cartTotalQuantity: number;
+  cartTotalAmount: number;
   cartProducts: CartProductType[] | null;
   handleAddProductToCart: (product: CartProductType) => void;
   handleRemoveProductFromCart: (product: CartProductType) => void;
+  handleCartQuantityIncrease: (product: CartProductType) => void;
+  handleCartQuantityDecrease: (product: CartProductType) => void;
+  handleClearCart: () => void;
 }
 
 export const CartContext = createContext<CartContextType | null>(null);
@@ -21,6 +25,7 @@ type Props = Record<string, any>;
 
 export const CartContextProvider = (props: Props) => {
   const [cartTotalQuantity, setCartTotalQuantity] = useState(0);
+  const [cartTotalAmount, setCartTotalAmount] = useState(0);
   const [cartProducts, setCartProducts] = useState<CartProductType[] | null>(
     null
   );
@@ -38,6 +43,28 @@ export const CartContextProvider = (props: Props) => {
       setIsLocalDataLoad(false);
     };
   }, []);
+
+  useEffect(() => {
+    const getTotals = () => {
+      if (cartProducts != null) {
+        const { total, quantity } = cartProducts?.reduce(
+          (acc, item) => {
+            const itemTotal = item.price * item.quantity;
+            acc.total += itemTotal;
+            acc.quantity += item.quantity;
+
+            return acc;
+          },
+          { total: 0, quantity: 0 }
+        );
+
+        setCartTotalQuantity(quantity);
+        setCartTotalAmount(total);
+      }
+    };
+
+    getTotals();
+  }, [cartProducts]);
 
   const handleAddProductToCart = useCallback((product: CartProductType) => {
     setCartProducts((prev) => {
@@ -69,14 +96,70 @@ export const CartContextProvider = (props: Props) => {
         );
       }
     },
-    []
+    [cartProducts]
   );
+
+  const handleCartQuantityIncrease = useCallback(
+    (product: CartProductType) => {
+      let updatedCart;
+      if (product.quantity === 99) {
+        return toast.error('Ooop! Maximun reached');
+      } else if (cartProducts != null) {
+        updatedCart = [...cartProducts];
+        const existingIndex = cartProducts?.findIndex(
+          (item) => item.id === product.id
+        );
+
+        if (existingIndex > -1) {
+          updatedCart[existingIndex].quantity = ++updatedCart[existingIndex]
+            .quantity;
+        }
+
+        setCartProducts(updatedCart);
+        localStorage.setItem('eShopCartItems', JSON.stringify(updatedCart));
+      }
+    },
+    [cartProducts]
+  );
+
+  const handleCartQuantityDecrease = useCallback(
+    (product: CartProductType) => {
+      let updatedCart;
+      if (product.quantity === 1) {
+        return toast.error('Ooop! Minimum reached');
+      } else if (cartProducts != null) {
+        updatedCart = [...cartProducts];
+        const existingIndex = cartProducts?.findIndex(
+          (item) => item.id === product.id
+        );
+
+        if (existingIndex > -1) {
+          updatedCart[existingIndex].quantity = --updatedCart[existingIndex]
+            .quantity;
+        }
+
+        setCartProducts(updatedCart);
+        localStorage.setItem('eShopCartItems', JSON.stringify(updatedCart));
+      }
+    },
+    [cartProducts]
+  );
+
+  const handleClearCart = useCallback(() => {
+    setCartProducts(null);
+    setCartTotalQuantity(0);
+    localStorage.setItem('eShopCartItems', JSON.stringify(null));
+  }, []);
 
   const value = {
     cartTotalQuantity,
+    cartTotalAmount,
     cartProducts,
     handleAddProductToCart,
     handleRemoveProductFromCart,
+    handleCartQuantityIncrease,
+    handleCartQuantityDecrease,
+    handleClearCart,
   };
 
   return <CartContext.Provider value={value} {...props} />;
