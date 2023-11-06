@@ -10,7 +10,7 @@ import BackDrop from './BackBrop';
 import { type SafeUser } from '@/types';
 
 interface UserMenuProps {
-  currentUser: SafeUser;
+  currentUser: SafeUser | null;
 }
 
 const UserMenu: React.FC<UserMenuProps> = ({ currentUser }) => {
