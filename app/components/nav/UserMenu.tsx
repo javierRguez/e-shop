@@ -37,7 +37,9 @@ const UserMenu: React.FC<UserMenuProps> = ({ currentUser }) => {
         hover:shadow-md
         '
         >
-          <Avatar />
+          <Avatar
+            src={currentUser?.image != null ? currentUser?.image : undefined}
+          />
           <AiFillCaretDown />
         </div>
         {isOpen && (
