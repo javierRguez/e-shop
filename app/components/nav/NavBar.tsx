@@ -9,7 +9,7 @@ const redressed = Redressed({ subsets: ['latin'], weight: ['400'] });
 
 const NavBar = async () => {
   const currentUser = await getCurrentUser();
-  console.log('===>', currentUser);
+
   return (
     <div className='sticky top-0 z-30 w-full bg-slate-200 shadow-sm'>
       <div className='border-b-[1px] py-4'>
