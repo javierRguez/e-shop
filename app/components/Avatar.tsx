@@ -9,6 +9,7 @@ const Avatar: React.FC<AvatarProps> = ({ src = '' }) => {
   if (src !== '') {
     return (
       <Image
+        referrerPolicy='no-referrer'
         src={src}
         alt='Avatar'
         className='rounded-full'

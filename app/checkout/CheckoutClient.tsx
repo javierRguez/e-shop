@@ -4,7 +4,7 @@ import { useCart } from '@/hooks/useCart';
 import { Elements } from '@stripe/react-stripe-js';
 import { type StripeElementsOptions, loadStripe } from '@stripe/stripe-js';
 import { useRouter } from 'next/navigation';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import toast from 'react-hot-toast';
 import CheckoutForm from './CheckoutForm';
 import Button from '../components/Button';
@@ -18,14 +18,15 @@ const CheckoutClient = () => {
   const [error, setError] = useState(false);
   const [clientSecret, setClientSecret] = useState<string>('');
   const [paymentSuccess, setPaymentSuccess] = useState(false);
+  const isCallLoading = useRef(false);
   const router = useRouter();
 
   useEffect(() => {
     // create a pymentintent as soon as the page loads
-    if (cartProducts != null) {
+    if (cartProducts != null && !isCallLoading.current) {
+      isCallLoading.current = true;
       setLoading(true);
       setError(false);
-
       fetch('/api/create-payment-intent', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -35,24 +36,32 @@ const CheckoutClient = () => {
         }),
       })
         .then(async (response) => {
-          setLoading(false);
           if (response.status === 401) {
             router.push('/login');
           }
 
-          return await response.json();
-        })
-        .then((data) => {
+          const data = await response.json();
           setClientSecret(data.paymentIntent.client_secret);
           handleSetPaymentIntent(data.paymentIntent.id);
         })
+
         .catch((error) => {
           setError(true);
           console.error('Error', error);
           toast.error('Something went wrong');
+        })
+
+        .finally(() => {
+          isCallLoading.current = false;
+          console.log('set2==>');
+          setLoading(false);
         });
     }
-  }, [cartProducts, paymentIntent]);
+  }, [cartProducts]);
+
+  useEffect(() => {
+    console.log('useEffect==>', loading);
+  }, [loading]);
 
   const options: StripeElementsOptions = {
     clientSecret,
@@ -71,7 +80,7 @@ const CheckoutClient = () => {
       {clientSecret != null &&
         clientSecret.length > 0 &&
         cartProducts != null && (
-          <Elements options={options} stripe={stripePromise}>
+          <Elements options={options} stripe={stripePromise} key={clientSecret}>
             <CheckoutForm
               clientSecret={clientSecret}
               handleSetPaymentSuccess={handleSetPaymentSuccess}

@@ -158,13 +158,10 @@ export const CartContextProvider = (props: Props) => {
     localStorage.setItem('eShopCartItems', JSON.stringify(null));
   }, []);
 
-  const handleSetPaymentIntent = useCallback(
-    (value: string | null) => {
-      setPaymentIntent(value);
-      localStorage.setItem('eShopPaymentIntent', JSON.stringify(value));
-    },
-    [paymentIntent]
-  );
+  const handleSetPaymentIntent = useCallback((value: string | null) => {
+    setPaymentIntent(value);
+    localStorage.setItem('eShopPaymentIntent', JSON.stringify(value));
+  }, []);
 
   const value = {
     cartTotalQuantity,

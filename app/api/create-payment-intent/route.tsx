@@ -15,9 +15,7 @@ const calculateOrderAmount = (items: CartProductType[]) => {
     return acc + itemTotal;
   }, 0);
 
-  const price: any = Number(totalPrice.toFixed(2));
-
-  return price;
+  return totalPrice;
 };
 
 export async function POST(request: Request) {
@@ -28,7 +26,7 @@ export async function POST(request: Request) {
 
   const body = await request.json();
   const { items, payment_intent_id } = body;
-  const total = calculateOrderAmount(items) * 100;
+  const total = Number((calculateOrderAmount(items) * 100).toFixed(0));
   const orderData = {
     user: { connect: { id: currentUser.id } },
     amount: total,
