@@ -1,15 +1,26 @@
 'use client';
 
+import Button from '@/app/components/Button';
 import Heading from '@/app/components/Heading';
 import CategoryInput from '@/app/components/inputs/CategoryInput';
 import CustomCheckBox from '@/app/components/inputs/CustomCheckBox';
 import Input from '@/app/components/inputs/Input';
 import SelectColor from '@/app/components/inputs/SelectColor';
 import TextArea from '@/app/components/inputs/TextArea';
+import firebaseApp from '@/libs/firebase';
 import { categories } from '@/utils/Categories';
 import { colors } from '@/utils/Colors';
-import { useState } from 'react';
-import { type FieldValues, useForm } from 'react-hook-form';
+import axios from 'axios';
+import {
+  getDownloadURL,
+  getStorage,
+  ref,
+  uploadBytesResumable,
+} from 'firebase/storage';
+import { useRouter } from 'next/navigation';
+import { useCallback, useEffect, useState } from 'react';
+import { type FieldValues, useForm, type SubmitHandler } from 'react-hook-form';
+import toast from 'react-hot-toast';
 
 export interface ImageType {
   color: string;
@@ -24,7 +35,10 @@ export interface UploadedImageType {
 }
 
 const AddProductForm = () => {
+  const router = useRouter();
   const [isLoading, setIsLoading] = useState(false);
+  const [images, setImages] = useState<ImageType[] | null>(null);
+  const [isProductCreated, setIsProductCreated] = useState(false);
   const {
     register,
     handleSubmit,
@@ -44,6 +58,115 @@ const AddProductForm = () => {
     },
   });
 
+  useEffect(() => {
+    setCustomValue('images', images);
+  }, [images]);
+
+  useEffect(() => {
+    if (isProductCreated) {
+      reset();
+      setImages(null);
+      setIsProductCreated(false);
+    }
+  }, [isProductCreated]);
+
+  const onSubmit: SubmitHandler<FieldValues> = async (data) => {
+    console.log('dentro');
+
+    // upload images to FB
+    // save product to mongodb
+    setIsLoading(true);
+    const uploadedImages: UploadedImageType[] = [];
+
+    if (data.category == null) {
+      setIsLoading(false);
+      return toast.error('Category is not selected');
+    }
+
+    if (data.images == null || data.images.length === 0) {
+      setIsLoading(false);
+      return toast.error('No selected image!');
+    }
+
+    const handleImageUploads = async () => {
+      toast('Creating product, please wait...');
+      try {
+        for (const item of data.images) {
+          if (item.image != null) {
+            const fileName = new Date().getTime() + '-' + item.image.name;
+            const storage = getStorage(firebaseApp);
+            const storageRef = ref(storage, `products/${fileName}`);
+            const uploadTask = uploadBytesResumable(storageRef, item.image);
+
+            await new Promise<void>((resolve, reject) => {
+              uploadTask.on(
+                'state_changed',
+                (snapshot) => {
+                  // Observe state change events such as progress, pause, and resume
+                  // Get task progress, including the number of bytes uploaded and the total number of bytes to be uploaded
+                  const progress =
+                    (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
+                  console.log('Upload is ' + progress + '% done');
+                  switch (snapshot.state) {
+                    case 'paused':
+                      console.log('Upload is paused');
+                      break;
+                    case 'running':
+                      console.log('Upload is running');
+                      break;
+                  }
+                },
+                (error) => {
+                  // Handle unsuccessful uploads
+                  console.error('Error uploading image', error);
+                  reject(error);
+                },
+                () => {
+                  // Handle successful uploads on complete
+                  getDownloadURL(uploadTask.snapshot.ref)
+                    .then((downloadURL) => {
+                      uploadedImages.push({
+                        ...item,
+                        image: downloadURL,
+                      });
+                      console.log('File available at', downloadURL);
+                      resolve();
+                    })
+                    .catch((error) => {
+                      console.error('Error getting the download URL', error);
+                      reject(error);
+                    });
+                }
+              );
+            });
+          }
+        }
+      } catch (error) {
+        setIsLoading(false);
+        console.error('Error handling image uploads', error);
+        return toast.error('Error handling image uploads');
+      }
+    };
+
+    await handleImageUploads();
+    const productData = { ...data, images: uploadedImages };
+
+    axios
+      .post('/api/product', productData)
+      .then(() => {
+        toast.success('Product created');
+        setIsProductCreated(true);
+        router.refresh();
+      })
+      .catch((error) => {
+        console.error('Error creating product', error);
+        toast.error('Error creating product');
+      })
+      .finally(() => {
+        setIsLoading(false);
+      });
+  };
+
   const category = watch('category');
 
   const setCustomValue = (id: string, value: any) => {
@@ -53,6 +176,29 @@ const AddProductForm = () => {
       shouldTouch: true,
     });
   };
+
+  const addImageToState = useCallback((value: ImageType) => {
+    setImages((prev) => {
+      if (prev == null || prev.length === 0) {
+        return [value];
+      }
+
+      return [...prev, value];
+    });
+  }, []);
+  const removeImageFromState = useCallback((value: ImageType) => {
+    setImages((prev) => {
+      if (prev != null && prev.length !== 0) {
+        const filteredImages = prev.filter(
+          (item) => item.color !== value.color
+        );
+
+        return filteredImages;
+      }
+
+      return prev;
+    });
+  }, []);
 
   return (
     <>
@@ -91,7 +237,7 @@ const AddProductForm = () => {
         required
       />
       <CustomCheckBox
-        id='inStrock'
+        id='inStock'
         register={register}
         label='This Product is in stock'
       />
@@ -133,14 +279,18 @@ const AddProductForm = () => {
               <SelectColor
                 key={item.colorCode}
                 item={item}
-                addImageToState={() => {}}
-                removeImageFromState={() => {}}
-                isProductCreated={false}
+                addImageToState={addImageToState}
+                removeImageFromState={removeImageFromState}
+                isProductCreated={isProductCreated}
               />
             );
           })}
         </div>
       </div>
+      <Button
+        label={isLoading ? 'Loading...' : 'Add Product'}
+        onClick={handleSubmit(onSubmit)}
+      />
     </>
   );
 };
