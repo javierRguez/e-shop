@@ -24,6 +24,8 @@ export default async function getProducts(params: IProductParams) {
               contains: searchString,
               mode: 'insensitive',
             },
+          },
+          {
             description: {
               contains: searchString,
               mode: 'insensitive',
@@ -42,7 +44,7 @@ export default async function getProducts(params: IProductParams) {
         },
       },
     });
-
+    console.log('====PROducts==>', { products, searchString });
     return products;
   } catch (error: any) {
     throw new Error(error);
