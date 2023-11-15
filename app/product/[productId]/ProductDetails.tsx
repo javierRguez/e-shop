@@ -10,6 +10,7 @@ import { useCart } from '@/hooks/useCart';
 import { Rating } from '@mui/material';
 import { useCallback, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { formatPrice } from '@/utils/formatPrice';
 
 interface ProductDetailsProps {
   product: any;
@@ -111,6 +112,9 @@ const ProductDetails: React.FC<ProductDetailsProps> = ({ product }) => {
       />
       <div className='flex flex-col gap-1 text-sm text-slate-500'>
         <h2 className='text-3xl font-medium text-slate-700'>{product.name}</h2>
+        <div className='text-3xl font-semibold text-slate-700'>{`${formatPrice(
+          product.price
+        )}`}</div>
         <div className='flex items-center gap-2'>
           <Rating value={productRating} readOnly />
           <div>{product.reviews.length} reviews</div>
