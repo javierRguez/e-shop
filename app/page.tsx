@@ -4,6 +4,8 @@ import NullData from './components/NullData';
 import ProductCard from './components/products/ProductCard';
 import getProducts, { type IProductParams } from '@/actions/getProducts';
 
+export const revalidate = 0;
+
 interface HomeProps {
   searchParams: IProductParams;
 }
