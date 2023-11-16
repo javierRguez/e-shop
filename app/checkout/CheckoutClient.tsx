@@ -53,15 +53,10 @@ const CheckoutClient = () => {
 
         .finally(() => {
           isCallLoading.current = false;
-          console.log('set2==>');
           setLoading(false);
         });
     }
   }, [cartProducts]);
-
-  useEffect(() => {
-    console.log('useEffect==>', loading);
-  }, [loading]);
 
   const options: StripeElementsOptions = {
     clientSecret,

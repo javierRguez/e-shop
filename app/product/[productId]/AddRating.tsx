@@ -83,7 +83,7 @@ const AddRating: React.FC<AddRatingProps> = ({ product, user }) => {
   const userReview = product?.reviews.find((review: Review) => {
     return review.userId === user.id;
   });
-  console.log('====>', deliveredOrder);
+
   if (userReview != null || !deliveredOrder) return null;
 
   return (

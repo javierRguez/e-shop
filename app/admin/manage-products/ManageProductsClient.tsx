@@ -118,7 +118,6 @@ const ManageProductsClient: React.FC<ManageProductsClientProps> = ({
   ];
 
   const handleToggleStock = useCallback((id: string, inStock: boolean) => {
-    console.log('dentro');
     axios
       .put('/api/product', {
         id,

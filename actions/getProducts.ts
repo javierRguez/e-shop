@@ -44,7 +44,7 @@ export default async function getProducts(params: IProductParams) {
         },
       },
     });
-    console.log('====PROducts==>', { products, searchString });
+
     return products;
   } catch (error: any) {
     throw new Error(error);
